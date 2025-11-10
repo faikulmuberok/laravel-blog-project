@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePostRequest;
 use Illuminate\Http\Request;
 
 class PostController extends Controller
@@ -12,7 +13,11 @@ class PostController extends Controller
      */
     public function index()
     {
-        //
+        $posts = Post::with(['categories', 'user'])
+        ->latest()
+        ->paginate(10);
+
+        return view('admin.posts.index', compact('posts'));
     }
 
     /**
@@ -20,15 +25,24 @@ class PostController extends Controller
      */
     public function create()
     {
-        //
+        $categories = Category::all();
+        return view('admin.posts.create', compact('categories'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StorePostRequest $request)
     {
-        //
+        $data = $request->validated();
+        $data['user_id'] = auth()->id();
+        $data['slug'] = str()->slug($data['slug']);
+
+       $post = Post::create($data);
+
+       $post->categories()->sync($request->categories);
+
+        return redirect()->route('admin.posts.index')->with('success', 'Post created successfully');
     }
 
     /**
@@ -36,7 +50,8 @@ class PostController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $post = Post::findOrFail($id);
+        return view('admin.posts.show', compact('post'));
     }
 
     /**
@@ -44,7 +59,9 @@ class PostController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $categories = Category::all();
+        $post->load('categories');
+        return view('admin.posts.edit', compact('post', 'categories'));
     }
 
     /**
@@ -52,7 +69,8 @@ class PostController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $post->delete();
+        return redirect()->route('admin.posts.index')->with('success', 'Post updated successfully');
     }
 
     /**
@@ -60,6 +78,8 @@ class PostController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $post = Post::findOrFail($id);
+        $post->delete();
+        return redirect()->route('admin.posts.index')->with('success', 'Post deleted successfully');
     }
 }

@@ -12,7 +12,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        //
+        $categories = Category::latest()->paginate(10);
+        return view('admin.categories.index', compact('categories'));
     }
 
     /**
@@ -20,7 +21,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        //
+        return view('admin.categories.create');
     }
 
     /**
@@ -28,7 +29,17 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+         $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories',
+            'description' => 'nullable|string'
+        ]);
+
+        $validated['slug'] = Str::slug($validated['name']);
+
+        Category::create($validated);
+
+        return redirect()->route('admin.categories.index')
+            ->with('success', 'Category created successfully');
     }
 
     /**
@@ -44,7 +55,7 @@ class CategoryController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return view('admin.categories.edit', compact('category'));
     }
 
     /**
@@ -52,7 +63,17 @@ class CategoryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'description' => 'nullable|string'
+        ]);
+
+        $validated['slug'] = Str::slug($validated['name']);
+
+        $category->update($validated);
+
+        return redirect()->route('admin.categories.index')
+            ->with('success', 'Category updated successfully');
     }
 
     /**
@@ -60,6 +81,8 @@ class CategoryController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+         $category->delete();
+        return redirect()->route('admin.categories.index')
+            ->with('success', 'Category deleted successfully');
     }
 }
